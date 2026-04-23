@@ -73,13 +73,13 @@ int main() {
   int bird_box_collision_shap_bottom = 0;               
   int bird_box_collision_shap_side_left = 10;              
   int bird_box_collision_shap_side_right = 10 + 2 - 1;  
-  int dead = 0;               // 0 = alive, 1 = dead
-  float spawn_timer = 0.0f;
-  unsigned long long current_score = 0;  // current score
-  unsigned long long best_score = 0; // best score
+  int bird_death_status = 0;               // 0 = alive, 1 = dead
+  float bird_spawn_timer = 0.0f;
+  unsigned long long game_current_score = 0;  // current score
+  unsigned long long game_best_score = 0; // best score
   // hud padding
-  int lp = 0; // left padding
-  int rp = 0; // right padding
+  int hud_left_padding = 0; // left padding
+  int hud_right_padding = 0; // right padding
   // pipe data
   std::vector<float> px; // x positions
   std::vector<int> pg;   // gap tops
@@ -98,16 +98,16 @@ int main() {
   // load best score
   std::ifstream fin("best-score.txt");
   if (fin) {
-    fin >> best_score;
+    fin >> game_best_score;
     if (!fin)
-      best_score = 0; // reset if read failed
+      game_best_score = 0; // reset if read failed
   }
   fin.close(); // close the file
 
   auto prev = std::chrono::steady_clock::now();
 
   // main loop
-  while (dead == 0) {
+  while (bird_death_status == 0) {
     // delta time
     auto now = std::chrono::steady_clock::now();
     float dt = std::chrono::duration<float>(now - prev).count();
@@ -143,9 +143,9 @@ int main() {
     bird_velocity = bird_velocity + 42.0f * dt;
     bird_position_y = bird_position_y + bird_velocity * dt;
 
-    spawn_timer = spawn_timer + dt;
-    if (spawn_timer >= 1.4f) {
-      spawn_timer = spawn_timer - 1.4f;
+    bird_spawn_timer = bird_spawn_timer + dt;
+    if (bird_spawn_timer >= 1.4f) {
+      bird_spawn_timer = bird_spawn_timer - 1.4f;
       px.push_back(50.0f);
       pg.push_back(d(rng));
       ps.push_back(0);
@@ -158,9 +158,9 @@ int main() {
       int pipeRight = (int)std::floor(px[i]) + 6 - 1;
       if (ps[i] == 0 && pipeRight < 10) {
         ps[i] = 1;
-        current_score = current_score + 1;
-        if (current_score > best_score)
-          best_score = current_score;
+        game_current_score = game_current_score + 1;
+        if (game_current_score > game_best_score)
+          game_best_score = game_current_score;
       }
     }
 
@@ -179,10 +179,10 @@ int main() {
     bird_box_collision_shap_side_right = 10 + 2 - 1; // same every frame
     // check wall
     if (bird_box_collision_shape_top < 0 || bird_box_collision_shap_bottom >= 20) {
-      dead = 1;
+      bird_death_status = 1;
     }
 
-    if (!dead) {
+    if (!bird_death_status) {
       for (int i = 0; i < (int)px.size(); i++) {
         int pl = (int)std::floor(px[i]);
         int pr = pl + 6 - 1;
@@ -190,18 +190,18 @@ int main() {
         if (bird_box_collision_shap_side_right >= pl && bird_box_collision_shap_side_left <= pr) {
           for (int y = bird_box_collision_shape_top; y <= bird_box_collision_shap_bottom; y++) {
             if (y < pg[i] || y >= pg[i] + 6) {
-              dead = 1;
+              bird_death_status = 1;
               break;
             }
           }
         }
 
-        if (dead != 0)
+        if (bird_death_status != 0)
           break;
       }
     }
 
-    if (dead != 0)
+    if (bird_death_status != 0)
       break;
 
     std::vector<std::string> frame(20, std::string(50, ' '));
@@ -232,11 +232,11 @@ int main() {
     }
 
     std::string scoreText =
-        "Score: " + std::to_string(current_score) + "   Best: " + std::to_string(best_score);
+        "Score: " + std::to_string(game_current_score) + "   Best: " + std::to_string(game_best_score);
     if (scoreText.size() > 50)
       scoreText = scoreText.substr(0, 50);
-    lp = (int)((50 - (int)scoreText.size()) / 2);
-    rp = 50 - lp - (int)scoreText.size();
+    hud_left_padding = (int)((50 - (int)scoreText.size()) / 2);
+    hud_right_padding = 50 - hud_left_padding - (int)scoreText.size();
 
     std::cout << "\x1b[2J\x1b[H";
     std::cout << "+" << std::string(50, '-') << "+" << "\n";
@@ -256,8 +256,8 @@ int main() {
     }
     std::cout << "+" << std::string(50, '-') << "+" << "\n";
     std::cout << "+" << std::string(50, '-') << "+" << "\n";
-    std::cout << "|" << std::string(lp, ' ') << scoreText
-              << std::string(rp, ' ') << "|\n";
+    std::cout << "|" << std::string(hud_left_padding, ' ') << scoreText
+              << std::string(hud_right_padding, ' ') << "|\n";
     std::cout << "+" << std::string(50, '-') << "+" << "\n";
     std::cout.flush();
 
@@ -273,7 +273,7 @@ int main() {
   // save best score to file
   std::ofstream fout("best-score.txt", std::ios::trunc);
   if (fout)
-    fout << best_score; // write best score
+    fout << game_best_score; // write best score
   fout.close();  // close the file
 
   // restore original console mode
