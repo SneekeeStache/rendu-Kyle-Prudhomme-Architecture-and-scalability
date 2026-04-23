@@ -17,6 +17,7 @@
     - variable pas clair:
         toutes les variable du code utilise des nom de variable en abreviation ou qui n'ont pas de sens
     - ancien code inutiliser toujours present meme si commenter
+    - probleme de lisibilité due a des if dans des if dans des if
     
 */
 
@@ -36,13 +37,13 @@
 
 
 int main() {
-  HANDLE h = GetStdHandle(STD_INPUT_HANDLE);   // input
-  HANDLE h2 = GetStdHandle(STD_OUTPUT_HANDLE); // output
-  if (h == INVALID_HANDLE_VALUE) {
+  HANDLE input_console = GetStdHandle(STD_INPUT_HANDLE);   // input
+  HANDLE output_console = GetStdHandle(STD_OUTPUT_HANDLE); // output
+  if (input_console == INVALID_HANDLE_VALUE) {
     std::cerr << "error" << std::endl;
     return 1;
   }
-  if (h2 == INVALID_HANDLE_VALUE) {
+  if (output_console == INVALID_HANDLE_VALUE) {
     std::cerr << "error" << std::endl;
     return 1;
   }
@@ -51,19 +52,19 @@ int main() {
   DWORD m = 0;
   DWORD m2 = 0;
   DWORD m3 = 0;
-  if (!GetConsoleMode(h, &m)) {
+  if (!GetConsoleMode(input_console, &m)) {
     std::cerr << "error" << std::endl;
     return 1;
   }
   m2 = m;
   m2 &= ~ENABLE_LINE_INPUT;
   m2 &= ~ENABLE_ECHO_INPUT;
-  if (!SetConsoleMode(h, m2)) {
+  if (!SetConsoleMode(input_console, m2)) {
     std::cerr << "error" << std::endl;
     return 1;
   }
-  if (GetConsoleMode(h2, &m3))
-    SetConsoleMode(h2, m3 | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+  if (GetConsoleMode(output_console, &m3))
+    SetConsoleMode(output_console, m3 | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 
   // bird
   float by = 9.0f;            // y position (float)
@@ -116,16 +117,16 @@ int main() {
 
     // read input events
     DWORD nEvents = 0;
-    if (!GetNumberOfConsoleInputEvents(h, &nEvents)) {
-      SetConsoleMode(h, m);
+    if (!GetNumberOfConsoleInputEvents(input_console, &nEvents)) {
+      SetConsoleMode(input_console, m);
       return 1;
     }
 
     for (DWORD i = 0; i < nEvents; ++i) // loop through events
     {
-      if (!ReadConsoleInput(h, &rec, 1, &ne)) {
+      if (!ReadConsoleInput(input_console, &rec, 1, &ne)) {
         std::cerr << "Failed to read console input." << std::endl;
-        SetConsoleMode(h, m);
+        SetConsoleMode(input_console, m);
         return 1;
       } // end if ReadConsoleInput
 
@@ -276,6 +277,6 @@ int main() {
   fout.close();  // close the file
 
   // restore original console mode
-  SetConsoleMode(h, m);
+  SetConsoleMode(input_console, m);
   return 0;
 }
