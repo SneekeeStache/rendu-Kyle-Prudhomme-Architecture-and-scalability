@@ -81,9 +81,9 @@ int main() {
   int hud_left_padding = 0; // left padding
   int hud_right_padding = 0; // right padding
   // pipe data
-  std::vector<float> px; // x positions
-  std::vector<int> pg;   // gap tops
-  std::vector<int> ps;   // scored flag (0 or 1)
+  std::vector<float> pipe_position_x; // x positions
+  std::vector<int> pipe_gap_top;   // gap tops
+  std::vector<int> pipe_scored_flag;   // scored flag (0 or 1)
 
   // rng
   std::mt19937 rng(std::random_device{}());
@@ -146,29 +146,29 @@ int main() {
     bird_spawn_timer = bird_spawn_timer + dt;
     if (bird_spawn_timer >= 1.4f) {
       bird_spawn_timer = bird_spawn_timer - 1.4f;
-      px.push_back(50.0f);
-      pg.push_back(d(rng));
-      ps.push_back(0);
+      pipe_position_x.push_back(50.0f);
+      pipe_gap_top.push_back(d(rng));
+      pipe_scored_flag.push_back(0);
     }
 
-    for (int i = 0; i < (int)px.size(); i++) // loop over all pipes
+    for (int i = 0; i < (int)pipe_position_x.size(); i++) // loop over all pipes
     {
-      px[i] = px[i] - 18.0f * dt; // move pipe left
+      pipe_position_x[i] = pipe_position_x[i] - 18.0f * dt; // move pipe left
 
-      int pipeRight = (int)std::floor(px[i]) + 6 - 1;
-      if (ps[i] == 0 && pipeRight < 10) {
-        ps[i] = 1;
+      int pipe_right = (int)std::floor(pipe_position_x[i]) + 6 - 1;
+      if (pipe_scored_flag[i] == 0 && pipe_right < 10) {
+        pipe_scored_flag[i] = 1;
         game_current_score = game_current_score + 1;
         if (game_current_score > game_best_score)
           game_best_score = game_current_score;
       }
     }
 
-    for (int i = (int)px.size() - 1; i >= 0; i--) {
-      if (px[i] + 6.0f < 0.0f) {
-        px.erase(px.begin() + i);
-        pg.erase(pg.begin() + i);
-        ps.erase(ps.begin() + i);
+    for (int i = (int)pipe_position_x.size() - 1; i >= 0; i--) {
+      if (pipe_position_x[i] + 6.0f < 0.0f) {
+        pipe_position_x.erase(pipe_position_x.begin() + i);
+        pipe_gap_top.erase(pipe_gap_top.begin() + i);
+        pipe_scored_flag.erase(pipe_scored_flag.begin() + i);
       }
     }
 
@@ -183,13 +183,13 @@ int main() {
     }
 
     if (!bird_death_status) {
-      for (int i = 0; i < (int)px.size(); i++) {
-        int pl = (int)std::floor(px[i]);
+      for (int i = 0; i < (int)pipe_position_x.size(); i++) {
+        int pl = (int)std::floor(pipe_position_x[i]);
         int pr = pl + 6 - 1;
 
         if (bird_box_collision_shap_side_right >= pl && bird_box_collision_shap_side_left <= pr) {
           for (int y = bird_box_collision_shape_top; y <= bird_box_collision_shap_bottom; y++) {
-            if (y < pg[i] || y >= pg[i] + 6) {
+            if (y < pipe_gap_top[i] || y >= pipe_gap_top[i] + 6) {
               bird_death_status = 1;
               break;
             }
@@ -206,14 +206,14 @@ int main() {
 
     std::vector<std::string> frame(20, std::string(50, ' '));
 
-    for (int i = 0; i < (int)px.size(); i++) {
-      int pl = (int)std::floor(px[i]);
+    for (int i = 0; i < (int)pipe_position_x.size(); i++) {
+      int pl = (int)std::floor(pipe_position_x[i]);
       for (int dx = 0; dx < 6; dx++) {
         int x = pl + dx;
         if (x < 0 || x >= 50)
           continue;
         for (int y = 0; y < 20; y++) {
-          if (!(y >= pg[i] && y < pg[i] + 6)) {
+          if (!(y >= pipe_gap_top[i] && y < pipe_gap_top[i] + 6)) {
             frame[y][x] = 'P';
           }
         }
