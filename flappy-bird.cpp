@@ -68,6 +68,13 @@ void load_best_score(unsigned long long& game_best_score) {
   fin.close();
 }
 
+void save_best_score(unsigned long long game_best_score) {
+  std::ofstream fout("best-score.txt", std::ios::trunc);
+  if (fout)
+    fout << game_best_score; // write best score
+  fout.close();
+}
+
 int main() {
   HANDLE input_console = GetStdHandle(STD_INPUT_HANDLE);   // input
   HANDLE output_console = GetStdHandle(STD_OUTPUT_HANDLE); // output
@@ -142,9 +149,9 @@ int main() {
       } // end if ReadConsoleInput
 
       if (rec.EventType == KEY_EVENT) {
-        KEY_EVENT_RECORD k = rec.Event.KeyEvent;
-        if (k.bKeyDown == TRUE) {
-          if (k.wVirtualKeyCode == VK_RETURN) {
+        KEY_EVENT_RECORD key_event_recorded = rec.Event.KeyEvent;
+        if (key_event_recorded.bKeyDown == TRUE) {
+          if (key_event_recorded.wVirtualKeyCode == VK_RETURN) {
             bird->velocity = -14.0f;
           } // end if enter
         } // end if key down
@@ -282,10 +289,7 @@ int main() {
   }
 
   // save best score to file
-  std::ofstream fout("best-score.txt", std::ios::trunc);
-  if (fout)
-    fout << game_best_score; // write best score
-  fout.close();  // close the file
+  save_best_score(game_best_score);
 
   // restore original console mode
   SetConsoleMode(input_console, m);
