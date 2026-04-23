@@ -77,6 +77,67 @@ void save_best_score(unsigned long long game_best_score) {
   fout.close();
 }
 
+void render_bird(bird_data* bird,std::vector<std::string>& frame) {
+  for (int dy = 0; dy < 2; dy++) {
+    int y = bird->box_collision_shape_top + dy;
+    if (y < 0 || y >= 20)
+      continue;
+    for (int dx = 0; dx < 2; dx++) {
+      int x = 10 + dx;
+      if (x >= 0 && x < 50)
+        frame[y][x] = 'B';
+    }
+  }
+}
+
+void render_pipe(pipe_data* pipe, std::vector<std::string>& frame) {
+  for (int i = 0; i < (int)pipe->position_x.size(); i++) {
+    int pipe_left = (int)std::floor(pipe->position_x[i]);
+    for (int dx = 0; dx < 6; dx++) {
+      int x = pipe_left + dx;
+      if (x < 0 || x >= 50)
+        continue;
+      for (int y = 0; y < 20; y++) {
+        if (!(y >= pipe->gap_top[i] && y < pipe->gap_top[i] + 6)) {
+          frame[y][x] = 'P';
+        }
+      }
+    }
+  }
+}
+
+void render_hud(hud_parameters* hud, unsigned long long& game_current_score, unsigned long long& game_best_score,std::vector<std::string>& frame) {
+  std::string scoreText =
+        "Score: " + std::to_string(game_current_score) + "   Best: " + std::to_string(game_best_score);
+  if (scoreText.size() > 50)
+    scoreText = scoreText.substr(0, 50);
+  hud->left_padding = (int)((50 - (int)scoreText.size()) / 2);
+  hud->right_padding = 50 - hud->left_padding - (int)scoreText.size();
+
+  std::cout << "\x1b[2J\x1b[H";
+  std::cout << "+" << std::string(50, '-') << "+" << "\n";
+  for (int y = 0; y < 20; y++) {
+    std::cout << "|";
+    for (int x = 0; x < 50; x++) {
+      char c = frame[y][x];
+      if (c == 'P') {
+        std::cout << "\x1b[32mP\x1b[0m";
+      } else if (c == 'B') {
+        std::cout << "\x1b[33mB\x1b[0m";
+      } else {
+        std::cout << ' ';
+      }
+    }
+    std::cout << "|\n";
+  }
+  std::cout << "+" << std::string(50, '-') << "+" << "\n";
+  std::cout << "+" << std::string(50, '-') << "+" << "\n";
+  std::cout << "|" << std::string(hud->left_padding, ' ') << scoreText
+            << std::string(hud->right_padding, ' ') << "|\n";
+  std::cout << "+" << std::string(50, '-') << "+" << "\n";
+  std::cout.flush();
+}
+
 int main() {
   HANDLE input_console = GetStdHandle(STD_INPUT_HANDLE);   // input
   HANDLE output_console = GetStdHandle(STD_OUTPUT_HANDLE); // output
@@ -204,10 +265,10 @@ int main() {
 
     if (!bird->death_status) {
       for (int i = 0; i < (int)pipe->position_x.size(); i++) {
-        int pl = (int)std::floor(pipe->position_x[i]);
-        int pr = pl + 6 - 1;
+        int pipe_left_collision = (int)std::floor(pipe->position_x[i]);
+        int pipe_right_collision = pipe_left_collision + 6 - 1;
 
-        if (bird->box_collision_shap_side_right >= pl && bird->box_collision_shap_side_left <= pr) {
+        if (bird->box_collision_shap_side_right >= pipe_left_collision && bird->box_collision_shap_side_left <= pipe_right_collision) {
           for (int y = bird->box_collision_shape_top; y <= bird->box_collision_shap_bottom; y++) {
             if (y < pipe->gap_top[i] || y >= pipe->gap_top[i] + 6) {
               bird->death_status = 1;
@@ -226,60 +287,11 @@ int main() {
 
     std::vector<std::string> frame(20, std::string(50, ' '));
 
-    for (int i = 0; i < (int)pipe->position_x.size(); i++) {
-      int pl = (int)std::floor(pipe->position_x[i]);
-      for (int dx = 0; dx < 6; dx++) {
-        int x = pl + dx;
-        if (x < 0 || x >= 50)
-          continue;
-        for (int y = 0; y < 20; y++) {
-          if (!(y >= pipe->gap_top[i] && y < pipe->gap_top[i] + 6)) {
-            frame[y][x] = 'P';
-          }
-        }
-      }
-    }
 
-    for (int dy = 0; dy < 2; dy++) {
-      int y = bird->box_collision_shape_top + dy;
-      if (y < 0 || y >= 20)
-        continue;
-      for (int dx = 0; dx < 2; dx++) {
-        int x = 10 + dx;
-        if (x >= 0 && x < 50)
-          frame[y][x] = 'B';
-      }
-    }
 
-    std::string scoreText =
-        "Score: " + std::to_string(game_current_score) + "   Best: " + std::to_string(game_best_score);
-    if (scoreText.size() > 50)
-      scoreText = scoreText.substr(0, 50);
-    hud->left_padding = (int)((50 - (int)scoreText.size()) / 2);
-    hud->right_padding = 50 - hud->left_padding - (int)scoreText.size();
-
-    std::cout << "\x1b[2J\x1b[H";
-    std::cout << "+" << std::string(50, '-') << "+" << "\n";
-    for (int y = 0; y < 20; y++) {
-      std::cout << "|";
-      for (int x = 0; x < 50; x++) {
-        char c = frame[y][x];
-        if (c == 'P') {
-          std::cout << "\x1b[32mP\x1b[0m";
-        } else if (c == 'B') {
-          std::cout << "\x1b[33mB\x1b[0m";
-        } else {
-          std::cout << ' ';
-        }
-      }
-      std::cout << "|\n";
-    }
-    std::cout << "+" << std::string(50, '-') << "+" << "\n";
-    std::cout << "+" << std::string(50, '-') << "+" << "\n";
-    std::cout << "|" << std::string(hud->left_padding, ' ') << scoreText
-              << std::string(hud->right_padding, ' ') << "|\n";
-    std::cout << "+" << std::string(50, '-') << "+" << "\n";
-    std::cout.flush();
+    render_pipe(pipe, frame);
+    render_bird(bird,frame);
+    render_hud(hud,game_current_score,game_best_score,frame);
 
     float ft =
         std::chrono::duration<float>(std::chrono::steady_clock::now() - now)
