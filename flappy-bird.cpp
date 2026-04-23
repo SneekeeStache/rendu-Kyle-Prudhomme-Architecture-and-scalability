@@ -1,7 +1,7 @@
 //explication du code:
 /*
     le code est un jeu inspirer de flappy bird qui se joue dans une console,
-    initialise ses variable a l'execution 
+    initialise ses variable a l'execution
     utilise une boucle while pour servire d'equivalent tick avec delta time afin de gerer
         - la detection d'input
         - les collisions
@@ -18,7 +18,9 @@
         toutes les variable du code utilise des nom de variable en abreviation ou qui n'ont pas de sens
     - ancien code inutiliser toujours present meme si commenter
     - probleme de lisibilité due a des if dans des if dans des if
-    
+    - plusieur calcule inutile qui pourais etre ecrit simplement en nombre par exemple 10 + 2 - 1 qui pourrais etre ecrit 11
+    - ligne inutile qui refont se qui a deja été fait plus haut
+
 */
 
 
@@ -75,6 +77,35 @@ void save_best_score(unsigned long long game_best_score) {
   if (fout)
     fout << game_best_score; // write best score
   fout.close();
+}
+
+void manage_bird_collision_with_wall(bird_data* bird) {
+  bird->box_collision_shape_top = (int)std::floor(bird->position_y);
+  bird->box_collision_shap_bottom = bird->box_collision_shape_top + 1;
+  // check wall
+  if (bird->box_collision_shape_top < 0 || bird->box_collision_shap_bottom >= 20) {
+    bird->death_status = 1;
+  }
+}
+void manage_bird_collision_with_pipe(bird_data* bird,pipe_data* pipe) {
+  if (!bird->death_status) {
+    for (int i = 0; i < (int)pipe->position_x.size(); i++) {
+      int pipe_left_collision = (int)std::floor(pipe->position_x[i]);
+      int pipe_right_collision = pipe_left_collision + 5;
+
+      if (bird->box_collision_shap_side_right >= pipe_left_collision && bird->box_collision_shap_side_left <= pipe_right_collision) {
+        for (int y = bird->box_collision_shape_top; y <= bird->box_collision_shap_bottom; y++) {
+          if (y < pipe->gap_top[i] || y >= pipe->gap_top[i] + 6) {
+            bird->death_status = 1;
+            break;
+          }
+        }
+      }
+
+      if (bird->death_status != 0)
+        break;
+    }
+  }
 }
 
 void render_bird(bird_data* bird,std::vector<std::string>& frame) {
@@ -176,7 +207,7 @@ int main() {
 
   // rng
   std::mt19937 rng(std::random_device{}());
-  std::uniform_int_distribution<int> gap_position(2, 20 - 6 - 2); // gap position
+  std::uniform_int_distribution<int> gap_position(2, 12); // gap position
 
   INPUT_RECORD rec;
   DWORD ne = 0;
@@ -236,7 +267,7 @@ int main() {
     {
       pipe->position_x[i] = pipe->position_x[i] - 18.0f * delta_time; // move pipe left
 
-      int pipe_right = (int)std::floor(pipe->position_x[i]) + 6 - 1;
+      int pipe_right = (int)std::floor(pipe->position_x[i]) + 5;
       if (pipe->scored_flag[i] == 0 && pipe_right < 10) {
         pipe->scored_flag[i] = 1;
         game_current_score = game_current_score + 1;
@@ -253,39 +284,14 @@ int main() {
       }
     }
 
-    // collision
-    bird->box_collision_shape_top = (int)std::floor(bird->position_y);
-    bird->box_collision_shap_bottom = bird->box_collision_shape_top + 1;
-    // check wall
-    if (bird->box_collision_shape_top < 0 || bird->box_collision_shap_bottom >= 20) {
-      bird->death_status = 1;
-    }
+    manage_bird_collision_with_wall(bird);
+    manage_bird_collision_with_pipe(bird,pipe);
 
-    if (!bird->death_status) {
-      for (int i = 0; i < (int)pipe->position_x.size(); i++) {
-        int pipe_left_collision = (int)std::floor(pipe->position_x[i]);
-        int pipe_right_collision = pipe_left_collision + 6 - 1;
-
-        if (bird->box_collision_shap_side_right >= pipe_left_collision && bird->box_collision_shap_side_left <= pipe_right_collision) {
-          for (int y = bird->box_collision_shape_top; y <= bird->box_collision_shap_bottom; y++) {
-            if (y < pipe->gap_top[i] || y >= pipe->gap_top[i] + 6) {
-              bird->death_status = 1;
-              break;
-            }
-          }
-        }
-
-        if (bird->death_status != 0)
-          break;
-      }
-    }
 
     if (bird->death_status != 0)
       break;
 
     std::vector<std::string> frame(20, std::string(50, ' '));
-
-
 
     render_pipe(pipe, frame);
     render_bird(bird,frame);
