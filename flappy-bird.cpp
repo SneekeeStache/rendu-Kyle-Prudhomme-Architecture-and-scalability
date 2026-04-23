@@ -36,6 +36,17 @@
 #include <windows.h>
 
 
+struct bird_parameters {
+  float position_y = 9.0f;
+  float velocity = 0.0f;
+  int box_collision_shape_top = 0;
+  int box_collision_shap_bottom = 0;
+  int box_collision_shap_side_left = 10;
+  int box_collision_shap_side_right = 10 + 2 - 1;
+  int death_status = 0;               // 0 = alive, 1 = dead
+  float spawn_timer = 0.0f;
+};
+
 int main() {
   HANDLE input_console = GetStdHandle(STD_INPUT_HANDLE);   // input
   HANDLE output_console = GetStdHandle(STD_OUTPUT_HANDLE); // output
@@ -67,14 +78,7 @@ int main() {
     SetConsoleMode(output_console, m3 | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 
   // bird
-  float bird_position_y = 9.0f;          
-  float bird_velocity = 0.0f;           
-  int bird_box_collision_shape_top = 0;                
-  int bird_box_collision_shap_bottom = 0;               
-  int bird_box_collision_shap_side_left = 10;              
-  int bird_box_collision_shap_side_right = 10 + 2 - 1;  
-  int bird_death_status = 0;               // 0 = alive, 1 = dead
-  float bird_spawn_timer = 0.0f;
+  bird_parameters *bird = new bird_parameters;
   unsigned long long game_current_score = 0;  // current score
   unsigned long long game_best_score = 0; // best score
   // hud padding
@@ -92,9 +96,6 @@ int main() {
   INPUT_RECORD rec;
   DWORD ne = 0;
 
-  // int debug = 1;
-  // if (debug) std::cout << "debug: game starting" << std::endl;
-
   // load best score
   std::ifstream fin("best-score.txt");
   if (fin) {
@@ -107,13 +108,13 @@ int main() {
   auto prev = std::chrono::steady_clock::now();
 
   // main loop
-  while (bird_death_status == 0) {
+  while (bird->death_status == 0) {
     // delta time
     auto now = std::chrono::steady_clock::now();
-    float dt = std::chrono::duration<float>(now - prev).count();
+    float delta_time = std::chrono::duration<float>(now - prev).count();
     prev = now;
-    if (dt > 0.1f)
-      dt = 0.1f; // clamp delta time
+    if (delta_time > 0.1f)
+      delta_time = 0.1f; // clamp delta time
 
     // read input events
     DWORD nEvents = 0;
@@ -134,18 +135,18 @@ int main() {
         KEY_EVENT_RECORD k = rec.Event.KeyEvent;
         if (k.bKeyDown == TRUE) {
           if (k.wVirtualKeyCode == VK_RETURN) {
-            bird_velocity = -14.0f;
+            bird->velocity = -14.0f;
           } // end if enter
         } // end if key down
       } // end if key event
     } // end for each event
 
-    bird_velocity = bird_velocity + 42.0f * dt;
-    bird_position_y = bird_position_y + bird_velocity * dt;
+    bird->velocity = bird->velocity + 42.0f * delta_time;
+    bird->position_y = bird->position_y + bird->velocity * delta_time;
 
-    bird_spawn_timer = bird_spawn_timer + dt;
-    if (bird_spawn_timer >= 1.4f) {
-      bird_spawn_timer = bird_spawn_timer - 1.4f;
+    bird->spawn_timer = bird->spawn_timer + delta_time;
+    if (bird->spawn_timer >= 1.4f) {
+      bird->spawn_timer = bird->spawn_timer - 1.4f;
       pipe_position_x.push_back(50.0f);
       pipe_gap_top.push_back(d(rng));
       pipe_scored_flag.push_back(0);
@@ -153,7 +154,7 @@ int main() {
 
     for (int i = 0; i < (int)pipe_position_x.size(); i++) // loop over all pipes
     {
-      pipe_position_x[i] = pipe_position_x[i] - 18.0f * dt; // move pipe left
+      pipe_position_x[i] = pipe_position_x[i] - 18.0f * delta_time; // move pipe left
 
       int pipe_right = (int)std::floor(pipe_position_x[i]) + 6 - 1;
       if (pipe_scored_flag[i] == 0 && pipe_right < 10) {
@@ -173,35 +174,35 @@ int main() {
     }
 
     // collision
-    bird_box_collision_shape_top = (int)std::floor(bird_position_y);
-    bird_box_collision_shap_bottom = bird_box_collision_shape_top + 2 - 1;
-    bird_box_collision_shap_side_left = 10;         // same every frame
-    bird_box_collision_shap_side_right = 10 + 2 - 1; // same every frame
+    bird->box_collision_shape_top = (int)std::floor(bird->position_y);
+    bird->box_collision_shap_bottom = bird->box_collision_shape_top + 2 - 1;
+    bird->box_collision_shap_side_left = 10;         // same every frame
+    bird->box_collision_shap_side_right = 10 + 2 - 1; // same every frame
     // check wall
-    if (bird_box_collision_shape_top < 0 || bird_box_collision_shap_bottom >= 20) {
-      bird_death_status = 1;
+    if (bird->box_collision_shape_top < 0 || bird->box_collision_shap_bottom >= 20) {
+      bird->death_status = 1;
     }
 
-    if (!bird_death_status) {
+    if (!bird->death_status) {
       for (int i = 0; i < (int)pipe_position_x.size(); i++) {
         int pl = (int)std::floor(pipe_position_x[i]);
         int pr = pl + 6 - 1;
 
-        if (bird_box_collision_shap_side_right >= pl && bird_box_collision_shap_side_left <= pr) {
-          for (int y = bird_box_collision_shape_top; y <= bird_box_collision_shap_bottom; y++) {
+        if (bird->box_collision_shap_side_right >= pl && bird->box_collision_shap_side_left <= pr) {
+          for (int y = bird->box_collision_shape_top; y <= bird->box_collision_shap_bottom; y++) {
             if (y < pipe_gap_top[i] || y >= pipe_gap_top[i] + 6) {
-              bird_death_status = 1;
+              bird->death_status = 1;
               break;
             }
           }
         }
 
-        if (bird_death_status != 0)
+        if (bird->death_status != 0)
           break;
       }
     }
 
-    if (bird_death_status != 0)
+    if (bird->death_status != 0)
       break;
 
     std::vector<std::string> frame(20, std::string(50, ' '));
@@ -221,7 +222,7 @@ int main() {
     }
 
     for (int dy = 0; dy < 2; dy++) {
-      int y = bird_box_collision_shape_top + dy;
+      int y = bird->box_collision_shape_top + dy;
       if (y < 0 || y >= 20)
         continue;
       for (int dx = 0; dx < 2; dx++) {
