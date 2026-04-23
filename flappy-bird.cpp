@@ -67,16 +67,16 @@ int main() {
     SetConsoleMode(output_console, m3 | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 
   // bird
-  float by = 9.0f;            // y position (float)
-  float bv = 0.0f;            // velocity
-  int bt = 0;                 // top (int)
-  int bb = 0;                 // bottom (int)
-  int bl = 10;                // left
-  int br = 10 + 2 - 1;        // right
+  float bird_position_y = 9.0f;          
+  float bird_velocity = 0.0f;           
+  int bird_box_collision_shape_top = 0;                
+  int bird_box_collision_shap_bottom = 0;               
+  int bird_box_collision_shap_side_left = 10;              
+  int bird_box_collision_shap_side_right = 10 + 2 - 1;  
   int dead = 0;               // 0 = alive, 1 = dead
-  float t = 0.0f;             // spawn timer
-  unsigned long long sc = 0;  // current score
-  unsigned long long bsc = 0; // best score
+  float spawn_timer = 0.0f;
+  unsigned long long current_score = 0;  // current score
+  unsigned long long best_score = 0; // best score
   // hud padding
   int lp = 0; // left padding
   int rp = 0; // right padding
@@ -98,9 +98,9 @@ int main() {
   // load best score
   std::ifstream fin("best-score.txt");
   if (fin) {
-    fin >> bsc;
+    fin >> best_score;
     if (!fin)
-      bsc = 0; // reset if read failed
+      best_score = 0; // reset if read failed
   }
   fin.close(); // close the file
 
@@ -134,18 +134,18 @@ int main() {
         KEY_EVENT_RECORD k = rec.Event.KeyEvent;
         if (k.bKeyDown == TRUE) {
           if (k.wVirtualKeyCode == VK_RETURN) {
-            bv = -14.0f;
+            bird_velocity = -14.0f;
           } // end if enter
         } // end if key down
       } // end if key event
     } // end for each event
 
-    bv = bv + 42.0f * dt;
-    by = by + bv * dt;
+    bird_velocity = bird_velocity + 42.0f * dt;
+    bird_position_y = bird_position_y + bird_velocity * dt;
 
-    t = t + dt;
-    if (t >= 1.4f) {
-      t = t - 1.4f;
+    spawn_timer = spawn_timer + dt;
+    if (spawn_timer >= 1.4f) {
+      spawn_timer = spawn_timer - 1.4f;
       px.push_back(50.0f);
       pg.push_back(d(rng));
       ps.push_back(0);
@@ -158,9 +158,9 @@ int main() {
       int pipeRight = (int)std::floor(px[i]) + 6 - 1;
       if (ps[i] == 0 && pipeRight < 10) {
         ps[i] = 1;
-        sc = sc + 1;
-        if (sc > bsc)
-          bsc = sc;
+        current_score = current_score + 1;
+        if (current_score > best_score)
+          best_score = current_score;
       }
     }
 
@@ -173,12 +173,12 @@ int main() {
     }
 
     // collision
-    bt = (int)std::floor(by);
-    bb = bt + 2 - 1;
-    bl = 10;         // same every frame
-    br = 10 + 2 - 1; // same every frame
+    bird_box_collision_shape_top = (int)std::floor(bird_position_y);
+    bird_box_collision_shap_bottom = bird_box_collision_shape_top + 2 - 1;
+    bird_box_collision_shap_side_left = 10;         // same every frame
+    bird_box_collision_shap_side_right = 10 + 2 - 1; // same every frame
     // check wall
-    if (bt < 0 || bb >= 20) {
+    if (bird_box_collision_shape_top < 0 || bird_box_collision_shap_bottom >= 20) {
       dead = 1;
     }
 
@@ -187,8 +187,8 @@ int main() {
         int pl = (int)std::floor(px[i]);
         int pr = pl + 6 - 1;
 
-        if (br >= pl && bl <= pr) {
-          for (int y = bt; y <= bb; y++) {
+        if (bird_box_collision_shap_side_right >= pl && bird_box_collision_shap_side_left <= pr) {
+          for (int y = bird_box_collision_shape_top; y <= bird_box_collision_shap_bottom; y++) {
             if (y < pg[i] || y >= pg[i] + 6) {
               dead = 1;
               break;
@@ -221,7 +221,7 @@ int main() {
     }
 
     for (int dy = 0; dy < 2; dy++) {
-      int y = bt + dy;
+      int y = bird_box_collision_shape_top + dy;
       if (y < 0 || y >= 20)
         continue;
       for (int dx = 0; dx < 2; dx++) {
@@ -232,7 +232,7 @@ int main() {
     }
 
     std::string scoreText =
-        "Score: " + std::to_string(sc) + "   Best: " + std::to_string(bsc);
+        "Score: " + std::to_string(current_score) + "   Best: " + std::to_string(best_score);
     if (scoreText.size() > 50)
       scoreText = scoreText.substr(0, 50);
     lp = (int)((50 - (int)scoreText.size()) / 2);
@@ -273,7 +273,7 @@ int main() {
   // save best score to file
   std::ofstream fout("best-score.txt", std::ios::trunc);
   if (fout)
-    fout << bsc; // write best score
+    fout << best_score; // write best score
   fout.close();  // close the file
 
   // restore original console mode
