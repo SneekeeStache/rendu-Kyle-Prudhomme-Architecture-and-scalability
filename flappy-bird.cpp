@@ -41,8 +41,8 @@ struct bird_data {
   float velocity = 0.0f;
   int box_collision_shape_top = 0;
   int box_collision_shap_bottom = 0;
-  int box_collision_shap_side_left = 10;
-  int box_collision_shap_side_right = 10 + 2 - 1;
+  const int box_collision_shap_side_left = 10;
+  const int box_collision_shap_side_right = 11;
   int death_status = 0;               // 0 = alive, 1 = dead
   float spawn_timer = 0.0f;
 };
@@ -255,9 +255,7 @@ int main() {
 
     // collision
     bird->box_collision_shape_top = (int)std::floor(bird->position_y);
-    bird->box_collision_shap_bottom = bird->box_collision_shape_top + 2 - 1;
-    bird->box_collision_shap_side_left = 10;         // same every frame
-    bird->box_collision_shap_side_right = 10 + 2 - 1; // same every frame
+    bird->box_collision_shap_bottom = bird->box_collision_shape_top + 1;
     // check wall
     if (bird->box_collision_shape_top < 0 || bird->box_collision_shap_bottom >= 20) {
       bird->death_status = 1;
