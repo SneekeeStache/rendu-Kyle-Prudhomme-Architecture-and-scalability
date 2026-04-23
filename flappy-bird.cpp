@@ -58,6 +58,8 @@ struct pipe_data {
   std::vector<int> scored_flag;
 };
 
+
+
 void load_best_score(unsigned long long& game_best_score) {
   std::ifstream fin("best-score.txt");
   if (fin) {
@@ -113,7 +115,7 @@ int main() {
 
   // rng
   std::mt19937 rng(std::random_device{}());
-  std::uniform_int_distribution<int> d(2, 20 - 6 - 2); // gap position
+  std::uniform_int_distribution<int> gap_position(2, 20 - 6 - 2); // gap position
 
   INPUT_RECORD rec;
   DWORD ne = 0;
@@ -165,7 +167,7 @@ int main() {
     if (bird->spawn_timer >= 1.4f) {
       bird->spawn_timer = bird->spawn_timer - 1.4f;
       pipe->position_x.push_back(50.0f);
-      pipe->gap_top.push_back(d(rng));
+      pipe->gap_top.push_back(gap_position(rng));
       pipe->scored_flag.push_back(0);
     }
 
