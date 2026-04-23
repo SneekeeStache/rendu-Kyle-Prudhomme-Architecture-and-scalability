@@ -1,3 +1,26 @@
+//explication du code:
+/*
+    le code est un jeu inspirer de flappy bird qui se joue dans une console,
+    initialise ses variable a l'execution 
+    utilise une boucle while pour servire d'equivalent tick avec delta time afin de gerer
+        - la detection d'input
+        - les collisions
+        - le rendering
+        - la position
+        - l'etat du joueur
+    et enregistre le meilleur score dans un fichier text
+
+//défauts d’implémentation
+/*
+    - God Object:
+        tout le code s'execute dans main sur un seul script
+    - variable pas clair:
+        toutes les variable du code utilise des nom de variable en abreviation ou qui n'ont pas de sens
+    - ancien code inutiliser toujours present meme si commenter
+    
+*/
+
+
 // TODO: clean this up later
 
 #include <algorithm>
